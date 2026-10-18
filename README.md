@@ -17,8 +17,8 @@ You can work on UI extensions in a browser without a Kindle, firmware image or S
 Use Node 22.18+ on the 22.x line, or Node 24.11+.
 
 ```sh
-git clone https://github.com/katadelos/kpp-mods-work.git
-cd kpp-mods-work
+git clone https://github.com/katadelos/kppmods.git
+cd kppmods
 git submodule update --init vendor/react-kindle
 npm ci
 npm run dev
