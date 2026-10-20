@@ -64,7 +64,11 @@ void report(const std::string &id, int priority, const std::string &message) {
             // Keep its per-process diagnostics writable after that transition.
             if (geteuid() == 0) {
                 if (passwd *account = getpwnam("framework")) {
-                    fchown(fileno(f), account->pw_uid, account->pw_gid);
+                    if (fchown(fileno(f), account->pw_uid, account->pw_gid) != 0) {
+                        syslog(LOG_WARNING,
+                               "kppmods: cannot change diagnostics ownership: %s",
+                               strerror(errno));
+                    }
                 }
             }
             fprintf(f, "%d\t%s\t%s\n", priority, sanitizeLogField(id).c_str(),
