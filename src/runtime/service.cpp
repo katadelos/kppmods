@@ -30,7 +30,7 @@ void Broker::loadConfiguration() {
         }
     }
     pendingJobs = readJson(config.root + "/pending-jobs.json", std::set<std::string>{});
-    disabled = readJson(config.root + "/disabled.json", Disabled{});
+    disabled = readJson(config.root + "/disabled.json", Disabled{"fake-registration"});
     config.settings.clear();
     for (const auto &p : config.packages) {
         if (!km::isPackageId(p.id)) {

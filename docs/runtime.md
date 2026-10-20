@@ -26,8 +26,11 @@ Add `--known-hosts FILE` if you use a separate host-key file.
 
 The deploy helper uploads the IPKs, installs them with opkg, then reloads once for
 the whole batch. Include every required package from the manifest's `needs` list.
-Installed extensions are enabled by default. Installing all IPKs from a build also
-installs optional features such as fake registration and hidden Settings entries.
+Installed extensions are enabled by default except Fake Registration, which is
+disabled for a new runtime configuration. Enable it in the extension manager or
+with `kppmod enable fake-registration`. Saved extension choices are preserved on
+upgrades. Installing all IPKs from a build also installs optional features such as
+fake registration and hidden Settings entries.
 
 After installation, on the device:
 
