@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <functional>
-#include <unistd.h>
+#include <sys/statvfs.h>
 
 namespace kppmods {
 std::string packagePath(const std::string &base, const std::string &rel) {
@@ -104,8 +104,16 @@ unavailablePackages(const std::map<std::string, Package> &installed) {
     for (const auto &[id, package] : installed) {
         for (const auto &[path, message] : package.requiresExecutables) {
             std::error_code error;
-            if (!std::filesystem::is_regular_file(path, error) ||
-                access(path.c_str(), X_OK)) {
+            const auto status = std::filesystem::status(path, error);
+            constexpr auto executable = std::filesystem::perms::owner_exec |
+                                        std::filesystem::perms::group_exec |
+                                        std::filesystem::perms::others_exec;
+            struct statvfs mount {};
+            // This broker runs as root. FSP forwards access(X_OK) to its
+            // noexec backing store even when the visible mount allows execve.
+            if (error || !std::filesystem::is_regular_file(status) ||
+                (status.permissions() & executable) == std::filesystem::perms::none ||
+                statvfs(path.c_str(), &mount) || (mount.f_flag & ST_NOEXEC)) {
                 unavailable.emplace(id, message);
                 break;
             }
