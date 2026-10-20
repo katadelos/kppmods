@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <functional>
+#include <unistd.h>
 
 namespace kppmods {
 std::string packagePath(const std::string &base, const std::string &rel) {
@@ -28,6 +29,12 @@ Package loadPackage(const std::string &directory) {
         std::filesystem::canonical(directory + "/manifest.json").parent_path().string();
     if (package.schema_version != 2 || !km::isPackageId(package.id)) {
         throw std::runtime_error("Invalid package manifest " + directory);
+    }
+    for (const auto &[path, message] : package.requiresExecutables) {
+        if (!std::filesystem::path(path).is_absolute() ||
+            path.find('\0') != std::string::npos || message.empty()) {
+            throw std::runtime_error("Invalid executable requirement in " + package.id);
+        }
     }
     const auto requireFile = [&](const std::string &path) {
         if (!std::filesystem::exists(packagePath(directory, path))) {
@@ -91,8 +98,43 @@ std::map<std::string, Package> installedPackages() {
     }
     return packages;
 }
+std::map<std::string, std::string>
+unavailablePackages(const std::map<std::string, Package> &installed) {
+    std::map<std::string, std::string> unavailable;
+    for (const auto &[id, package] : installed) {
+        for (const auto &[path, message] : package.requiresExecutables) {
+            std::error_code error;
+            if (!std::filesystem::is_regular_file(path, error) ||
+                access(path.c_str(), X_OK)) {
+                unavailable.emplace(id, message);
+                break;
+            }
+        }
+    }
+    // An unavailable provider also prevents its dependent extensions loading.
+    bool changed;
+    do {
+        changed = false;
+        for (const auto &[id, package] : installed) {
+            if (unavailable.count(id)) {
+                continue;
+            }
+            for (const auto &dependency : package.needs) {
+                if (!installed.count(dependency) || unavailable.count(dependency)) {
+                    unavailable.emplace(id, "A required extension is unavailable: " +
+                                                dependency);
+                    changed = true;
+                    break;
+                }
+            }
+        }
+    } while (changed);
+    return unavailable;
+}
+
 void setPackageEnabled(const std::map<std::string, Package> &installed,
                        Disabled &disabled, const std::string &id, bool enabled) {
+    const auto unavailable = unavailablePackages(installed);
     std::set<std::string> visited;
     std::function<void(const std::string &)> change = [&](const std::string &current) {
         if (!installed.count(current)) {
@@ -102,6 +144,9 @@ void setPackageEnabled(const std::map<std::string, Package> &installed,
             return;
         }
         if (enabled) {
+            if (unavailable.count(current)) {
+                throw std::runtime_error(unavailable.at(current));
+            }
             disabled.erase(current);
             for (const auto &dependency : installed.at(current).needs) {
                 change(dependency);
@@ -120,6 +165,7 @@ void setPackageEnabled(const std::map<std::string, Package> &installed,
 }
 std::vector<Package> enabledPackages(const std::map<std::string, Package> &installed,
                                      const Disabled &disabled) {
+    const auto unavailable = unavailablePackages(installed);
     std::vector<Package> ordered;
     std::map<std::string, int> marks;
     std::function<void(const std::string &)> visit = [&](const std::string &id) {
@@ -141,7 +187,7 @@ std::vector<Package> enabledPackages(const std::map<std::string, Package> &insta
         ordered.push_back(installed.at(id));
     };
     for (const auto &[id, package] : installed) {
-        if (!disabled.count(id)) {
+        if (!disabled.count(id) && !unavailable.count(id)) {
             visit(id);
         }
     }

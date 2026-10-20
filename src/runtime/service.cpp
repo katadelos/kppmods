@@ -75,12 +75,19 @@ Json Broker::manage(const Json &body) {
     }
     if (command == "list") {
         boost::json::array result;
-        for (const auto &[id, p] : installedPackages()) {
-            result.push_back(
-                boost::json::object{{"id", id},
-                                    {"title", p.title.empty() ? id : p.title},
-                                    {"enabled", !disabled.count(id)},
-                                    {"needs", boost::json::value_from(p.needs)}});
+        const auto installed = installedPackages();
+        const auto unavailable = unavailablePackages(installed);
+        for (const auto &[id, p] : installed) {
+            const bool available = !unavailable.count(id);
+            result.push_back(boost::json::object{
+                {"id", id},
+                {"title", p.title.empty() ? id : p.title},
+                {"enabled", available && !disabled.count(id) &&
+                                std::ranges::find(config.packages, id, &Manifest::id) !=
+                                    config.packages.end()},
+                {"available", available},
+                {"unavailableReason", available ? "" : unavailable.at(id)},
+                {"needs", boost::json::value_from(p.needs)}});
         }
         return result;
     }
@@ -117,6 +124,20 @@ Json Broker::manage(const Json &body) {
                             if (!installed.count(id)) {
                                 throw std::runtime_error(
                                     "Extension is not installed: " + id);
+                            }
+                        }
+                        // Availability is separate from the user's saved switch.
+                        // Reject attempts to turn on a previously disabled package
+                        // while its software is missing; retain other preferences.
+                        for (const auto &[id, reason] :
+                             unavailablePackages(installed)) {
+                            if (!nextDisabled.count(id) && currentDisabled.count(id)) {
+                                throw std::runtime_error(reason);
+                            }
+                            if (currentDisabled.count(id)) {
+                                nextDisabled.insert(id);
+                            } else {
+                                nextDisabled.erase(id);
                             }
                         }
                     } else if (command == "enable" || command == "disable") {

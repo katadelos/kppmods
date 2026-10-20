@@ -13,9 +13,9 @@ function NavigationRow({ title, description, onPress, disabled }) {
   );
 }
 
-function ToggleRow({ title, currentState, disabled, onPress }) {
+function ToggleRow({ title, description, currentState, disabled, onPress }) {
   return (
-    <SettingsRow title={title}>
+    <SettingsRow title={title} description={description}>
       <SettingsToggle
         value={currentState}
         disabled={disabled}
@@ -80,7 +80,7 @@ export default function ExtensionManager({
   }, [refresh]);
   const pending = packages.filter((pkg) => draft[pkg.id] !== pkg.enabled).length;
   function toggle(pkg) {
-    if (busy) return;
+    if (busy || !pkg.available) return;
     setError('');
     setDraft((previous) => {
       const next = { ...previous },
@@ -150,8 +150,11 @@ export default function ExtensionManager({
           <ToggleRow
             widgetId={'kppmods-' + pkg.id}
             title={pkg.title}
+            description={pkg.available ? '' : pkg.unavailableReason}
             currentState={!!draft[pkg.id]}
-            disabled={busy || pkg.id === 'ui-host' || pkg.id === 'mod-manager'}
+            disabled={
+              busy || !pkg.available || pkg.id === 'ui-host' || pkg.id === 'mod-manager'
+            }
             onPress={() => toggle(pkg)}
           />
           <Separator />

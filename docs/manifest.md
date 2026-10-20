@@ -28,6 +28,17 @@ For a complete UI example, see [Write a UI extension](extensions.md).
 | `title`, `description` | Display metadata                                                                                                   |
 | `needs`                | Required extension IDs; providers initialize first and must be enabled                                             |
 
+`requiresExecutables` maps absolute executable paths to messages explaining why
+an extension is unavailable. Missing or non-executable programs keep the extension
+and its dependents inactive, with disabled switches in **Settings → Extensions**.
+For example:
+
+```json
+"requiresExecutables": {
+  "/var/run/eink-sdk/usr/bin/supernet": "Install Supernet to enable SSH."
+}
+```
+
 The IPK name is `kppmods-ID`. Payloads are installed under
 `usr/lib/kppmods/extensions/ID` in the SDK store. `needs` becomes opkg dependencies;
 version resolution belongs to opkg.

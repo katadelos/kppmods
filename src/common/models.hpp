@@ -74,6 +74,7 @@ struct Manifest {
     int schema_version = 0;
     std::string id, version, title, description;
     std::vector<std::string> ui, needs;
+    std::map<std::string, std::string> requiresExecutables;
     std::optional<UiRuntime> ui_runtime;
     std::vector<NativeModule> modules;
     std::vector<StatusItem> statusbar;
@@ -85,8 +86,8 @@ struct Manifest {
 };
 BOOST_DESCRIBE_STRUCT(Manifest, (),
                       (schema_version, id, version, title, description, ui, needs,
-                       ui_runtime, modules, statusbar, actions, native, options,
-                       settings, settingsSchema, apps))
+                       requiresExecutables, ui_runtime, modules, statusbar, actions,
+                       native, options, settings, settingsSchema, apps))
 inline Manifest tag_invoke(boost::json::value_to_tag<Manifest>, const km::Json &json) {
     return readRecord<Manifest>(json);
 }

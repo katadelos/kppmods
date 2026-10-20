@@ -197,16 +197,16 @@ Subscriptions recover after a broker restart. Declare a service provider in
 
 ## Management and inspection
 
-| Method                          | Result                                                    |
-| ------------------------------- | --------------------------------------------------------- |
-| `management.list()`             | Installed `{id, title, enabled, needs}` records           |
-| `management.apply(disabledIds)` | Replace the complete disabled set and wait for activation |
-| `management.apps()`             | Discover installed scriptlet apps                         |
-| `management.launchApp(script)`  | Start a discovered scriptlet                              |
-| `packages()`                    | Active `{id, version, title}` records                     |
-| `state()`                       | Broker settings and events                                |
-| `capabilities()`                | Names of resolved stock adapter modules                   |
-| `log(text)`                     | Log with the package ID                                   |
+| Method                          | Result                                                                        |
+| ------------------------------- | ----------------------------------------------------------------------------- |
+| `management.list()`             | Installed `{id, title, enabled, available, unavailableReason, needs}` records |
+| `management.apply(disabledIds)` | Replace the complete disabled set and wait for activation                     |
+| `management.apps()`             | Discover installed scriptlet apps                                             |
+| `management.launchApp(script)`  | Start a discovered scriptlet                                                  |
+| `packages()`                    | Active `{id, version, title}` records                                         |
+| `state()`                       | Broker settings and events                                                    |
+| `capabilities()`                | Names of resolved stock adapter modules                                       |
+| `log(text)`                     | Log with the package ID                                                       |
 
 `KPPMods.inspect()` lists active packages and contributions in the JS runtime.
 Activation and rendering failures produce `ui:error` events. Direct firmware-module
