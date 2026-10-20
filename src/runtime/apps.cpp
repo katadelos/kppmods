@@ -19,6 +19,10 @@ Json installedApps() {
         fs::directory_iterator files(directory, error), end;
         for (; !error && files != end; files.increment(error)) {
             const auto path = files->path();
+            // The bootstrap script restarts this runtime; it is not an app.
+            if (path == "/mnt/us/documents/kppmods.sh") {
+                continue;
+            }
             std::error_code typeError;
             if (path.extension() != ".sh" || !files->is_regular_file(typeError)) {
                 continue;

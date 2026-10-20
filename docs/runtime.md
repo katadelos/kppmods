@@ -140,6 +140,8 @@ The launcher discovers `.sh` files in `/mnt/us/documents` and `/mnt/us/applicati
 Put `# Name: My App` in the first 32 lines; otherwise the filename becomes the title.
 A PNG or SVG with the same basename supplies its icon. Press **Refresh** in the
 launcher after adding or removing a script.
+The KPP Mods startup scriptlet is excluded from Apps and remains available in the
+Kindle library.
 
 `kppmod apps` lists discovered apps; `kppmod launch-app SCRIPT` starts one. A single
 Upstart job tracks the foreground process. It runs as root in the script's directory
