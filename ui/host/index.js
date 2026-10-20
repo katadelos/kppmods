@@ -172,6 +172,15 @@ module.exports = function createHost(global) {
         patchStockMethod,
         ExtensionErrorBoundary
       }),
+    wifiSettings: () =>
+      require('../adapters/wifi-settings')({
+        React,
+        ReactNative,
+        loadStockModule,
+        patchStockMethod,
+        useRegistry,
+        ExtensionErrorBoundary
+      }),
     home: () =>
       require('../adapters/home')({
         loadStockModule,

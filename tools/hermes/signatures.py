@@ -16,6 +16,21 @@ SIGNATURES = {
         "FullWidthBlackRowSeperator",
         "fullWidthSeparator",
     },
+    "dialogLauncher": {
+        "LauncherStore",
+        "[KPPDialogLauncher.show] KPPDialog is closed. Component state could not be updated.",
+        "onHideDialog",
+    },
+    "simpleModal": {
+        "SimpleModalV2_",
+        "bodyScrollable",
+        "nonWrappableFooter",
+    },
+    "wifiSettings": {
+        "getWifiWidgetState",
+        "renderPageItems",
+        "settingsapp.wifi_and_bluetooth",
+    },
     "settingsRoot": {
         "renderSettingsHomeView",
         "renderActiveView",

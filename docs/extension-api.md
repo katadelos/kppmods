@@ -73,6 +73,7 @@ can only remove its own registrations. Lower `order` values sort first (default 
 | `tabs`          | `id`, `title`, React `component`; optional `order`, `footer` (set `false` for a route without a footer button)               |
 | `home`          | `id`, React `component`, optional `order`; replaces stock Home content                                                       |
 | `settingsPages` | `id`, `title`, React `component`, optional `order`                                                                           |
+| `wifiSettings`  | `id`, React `component`, optional `order`; rows inside the native Wi-Fi settings page                                        |
 | `menuItems`     | `id`, `title`, `app://` `uri`, optional `order`; stock three-dot menu                                                        |
 | `quickSettings` | `id`, `title`, `icon`, `action`; optional `iconOn`, `args`, `close`, `order`, `value()`, `disabled()`, `subscribe(listener)` |
 | `sliders`       | `id`, `title`, `min`, `max`; optional `get()`, `set(value)`, `subscribe(listener)`, `action`, `order`                        |
@@ -109,6 +110,9 @@ A Settings page receives `NavigationRow`, `ToggleRow`, `PageContainer` and
 - `NavigationRow`: `widgetId`, `title`, `description`, `onPress`, `disabled`, `isShowNavigationIcon`.
 - `ToggleRow`: `widgetId`, `title`, `description`, `currentState`, `onPress`, `disabled`.
 - `PageContainer` and `Separator`: group rows and draw stock dividers.
+
+A `wifiSettings` component receives the same row props and appears after the stock
+Wi-Fi controls. Check for the `wifiSettings` capability before registering it.
 
 The stock renderer supplies margins, scrolling and Back navigation. Avoid adding a
 second inset. Keep draft selections in React state until the user applies them.

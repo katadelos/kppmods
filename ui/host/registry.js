@@ -3,6 +3,7 @@ const kinds = [
   'tabs',
   'menuItems',
   'settingsPages',
+  'wifiSettings',
   'home',
   'quickSettings',
   'sliders',

@@ -27,6 +27,7 @@ module.exports = function createContributions(
         if (
           ((kind === 'tabs' && !definition.hide) ||
             kind === 'home' ||
+            kind === 'wifiSettings' ||
             (kind === 'settingsPages' && !definition.hide)) &&
           typeof definition.component !== 'function'
         )
