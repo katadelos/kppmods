@@ -10,6 +10,7 @@ module.exports = function installTabs(host) {
     contributions,
     subscribeToEvent
   } = host;
+  const { View } = loadStockModule('reactNative');
   const views = loadStockModule(
     'views',
     (moduleExports) => moduleExports.KPPViews && moduleExports.KPPViews.KPP_HOME
@@ -87,6 +88,16 @@ module.exports = function installTabs(host) {
     function visible(node) {
       if (!React.isValidElement(node)) return node;
       if (hidden.indexOf(node.props.testID) >= 0) return null;
+      // Scribe reserves a separate empty View for the floating book cover.
+      // Remove that space with the cover so all remaining tabs share the row.
+      if (
+        props.isScreenSize10Plus &&
+        hidden.indexOf('chrome.lastBook.button') >= 0 &&
+        node.type === View &&
+        node.props.children === undefined &&
+        !node.props.testID
+      )
+        return null;
       // The stock book shortcut can be wrapped in a layout element; its
       // image-navigation callback identifies the actual cover contribution.
       if (

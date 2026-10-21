@@ -6,7 +6,7 @@
   "ui": ["main.jsx"],
   "options": {
     "title": "Apps",
-    "hiddenTabs": ["chrome.notebook.button", "chrome.lastBook.button"]
+    "hiddenTabs": ["chrome.lastBook.button"]
   },
   "needs": ["ui-host"]
 }
