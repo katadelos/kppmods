@@ -79,6 +79,9 @@ export default function ExtensionManager({
     refresh();
   }, [refresh]);
   const pending = packages.filter((pkg) => draft[pkg.id] !== pkg.enabled).length;
+  const optionalPackages = packages.filter(
+    (pkg) => pkg.id !== 'ui-host' && pkg.id !== 'mod-manager'
+  );
   function toggle(pkg) {
     if (busy || !pkg.available) return;
     setError('');
@@ -145,16 +148,14 @@ export default function ExtensionManager({
         onPress={discard}
       />
       <Separator />
-      {packages.map((pkg) => (
+      {optionalPackages.map((pkg) => (
         <React.Fragment key={pkg.id}>
           <ToggleRow
             widgetId={'kppmods-' + pkg.id}
             title={pkg.title}
             description={pkg.available ? '' : pkg.unavailableReason}
             currentState={!!draft[pkg.id]}
-            disabled={
-              busy || !pkg.available || pkg.id === 'ui-host' || pkg.id === 'mod-manager'
-            }
+            disabled={busy || !pkg.available}
             onPress={() => toggle(pkg)}
           />
           <Separator />

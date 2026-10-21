@@ -173,6 +173,12 @@ void setPackageEnabled(const std::map<std::string, Package> &installed,
 }
 std::vector<Package> enabledPackages(const std::map<std::string, Package> &installed,
                                      const Disabled &disabled) {
+    for (const auto &id : disabled) {
+        if (id == "ui-host" || id == "mod-manager") {
+            throw std::runtime_error("Core extension cannot be disabled: " + id);
+        }
+    }
+
     const auto unavailable = unavailablePackages(installed);
     std::vector<Package> ordered;
     std::map<std::string, int> marks;
