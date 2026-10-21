@@ -94,6 +94,23 @@ module.exports = function createHost(global) {
     if (!componentSlots[item.id]) {
       componentSlots[item.id] = function ExtensionSlot(props) {
         const current = useRegistry('tabs').find((entry) => entry.id === item.id);
+        const route = current && current.route;
+        React.useEffect(() => {
+          if (!route || props.activeAppID !== route) return;
+          // Native KPP does not have a chrome profile for extension routes.
+          // Configure it on entry so Settings or a reader cannot leave their
+          // title, controls, or hidden footer behind on an extension tab.
+          ReactNative.NativeModules.KPPChromeConfigurationModule.configureChrome(
+            {
+              appId: route,
+              source: 'org.kppmods.' + current.owner,
+              topNavBar: { template: 'searchBar', buttons: [] },
+              systemMenu: { clientParams: { profile: { items: [] } } },
+              bottomChromeConfig: { hideBottomChrome: false }
+            },
+            {}
+          );
+        }, [route, props.activeAppID]);
         if (!current) return null;
         return React.createElement(
           ExtensionErrorBoundary,
