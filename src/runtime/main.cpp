@@ -1,6 +1,7 @@
 #include "broker.hpp"
 #include "common/lipc.hpp"
 #include "hermes/discovery.hpp"
+#include "userstore.hpp"
 #include <fcntl.h>
 #include <iostream>
 #include <signal.h>
@@ -87,6 +88,12 @@ LIPCcode request(LIPC *connection, const char *, LIPCha *input, LIPCha **output,
 } // namespace
 int main(int argc, char **argv) {
     try {
+        if (argc == 2 && (std::string(argv[1]).starts_with("--userstore-") ||
+                         std::string(argv[1]) == "--prepare-runtime" ||
+                         std::string(argv[1]) == "--prepare-export" ||
+                         std::string(argv[1]) == "--watch-userstore")) {
+            return kppmods::userstoreCommand(argv[1]);
+        }
         if (argc != 3 || std::string(argv[1]) != "--config") {
             return client({argv + 1, argv + argc});
         }

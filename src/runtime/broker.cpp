@@ -1,6 +1,7 @@
 // LIPC operations for settings, extension events and status-bar items.
 #include "broker.hpp"
 #include "common/lipc.hpp"
+#include "userstore.hpp"
 #include <ctime>
 #include <unistd.h>
 
@@ -31,6 +32,11 @@ void Broker::event(const std::string &owner, const std::string &name, Json value
 }
 
 Json Broker::handleRequest(const std::string &operation, const Json &body) {
+    km::files::FileDescriptor admission;
+    if (operation == "settings" || operation == "development" ||
+        operation == "developmentResult" || operation == "action") {
+        admission = userstoreAdmission();
+    }
     if (operation == "management") {
         return manage(body);
     }

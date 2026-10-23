@@ -90,6 +90,7 @@ std::map<std::string, std::string> jobEnvironment(const Configuration &configura
         preload += (preload.empty() ? "" : ":") + library;
     }
     environment["LD_PRELOAD"] = preload;
+    environment["LD_LIBRARY_PATH"] = "/var/local/kppmods/current/lib";
     environment["KPPMOD_CONFIG"] = configuration.root + "/config.json";
     environment["KPPMOD_PROCESS"] = job;
     environment["KPPMOD_STATUS_DIR"] = runRoot + "/native";

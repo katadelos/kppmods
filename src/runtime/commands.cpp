@@ -1,5 +1,6 @@
 // Asynchronous command execution for trusted in-process extensions.
 #include "broker.hpp"
+#include "userstore.hpp"
 #include <algorithm>
 #include <syslog.h>
 #include <utf8.h>
@@ -8,6 +9,7 @@ namespace kppmods {
 namespace runtime {
 Json Broker::launchCommand(const CommandRequest &input, const std::string &action,
                            const std::string &payload) {
+    auto admission = userstoreAdmission();
     const auto &owner = input.package;
     if (!config.settings.contains(owner)) {
         throw std::runtime_error("Unknown extension");
@@ -60,6 +62,7 @@ Json Broker::launchCommand(const CommandRequest &input, const std::string &actio
         throw std::runtime_error("Timeout must be 1–3600 seconds");
     }
     process::Environment environment = {
+        {"EINK_SDK_SESSION", "1"},
         {"KPPMOD_PACKAGE", owner},
         {"KPPMOD_PACKAGE_ROOT", package(owner).root},
         {"DISPLAY", getenv("DISPLAY") ? getenv("DISPLAY") : ":0.0"}};
@@ -70,7 +73,7 @@ Json Broker::launchCommand(const CommandRequest &input, const std::string &actio
                                                     std::move(environment), timeout);
     const auto pid = child->child.id();
     std::string id = streamId + "-" + std::to_string(++commandSequence);
-    commands.emplace(id, CommandProcess{std::move(child), owner, action});
+    commands.emplace(id, CommandProcess{std::move(child), owner, action, std::move(admission)});
     boost::json::object result;
     result["id"] = id;
     result["done"] = false;
@@ -86,6 +89,7 @@ void Broker::reapCommands() {
         auto &c = entry.second;
         auto &child = *c.child;
         if (child.poll()) {
+            c.userstore.reset();
             boost::json::object outcome{{"id", entry.first},
                                         {"exitCode", *child.result},
                                         {"timedOut", child.timedOut},

@@ -3,6 +3,25 @@
 set -eu
 [ "${KPPMOD_DEFER_RELOAD:-0}" != 1 ] || exit 0
 umask 022
+runtime=/var/local/kppmods/current
+run=/var/run/kppmods
+exec 9>/var/run/eink-sdk-userstore.lock
+flock -s 9
+/mnt/us/.eink-sdk/usr/bin/kppmod --prepare-runtime
+mkdir -p "$run"
+touch "$run/starting"
+trap 'rm -f "$run/starting"' EXIT HUP INT TERM
+# The original and wrapper live in RAM, and the bind disappears at reboot.
+# Firmware rootfs files are never changed or carried across an OTA update.
+if [ ! -f "$run/mntus.stock" ]; then
+    cp /usr/sbin/mntus "$run/mntus.stock"
+fi
+if ! cmp -s "$runtime/share/kppmods/kppmods-mntus" /usr/sbin/mntus; then
+    wrapper=$(mktemp "$run/mntus.XXXXXX")
+    cp "$runtime/share/kppmods/kppmods-mntus" "$wrapper"
+    chmod 755 "$wrapper"
+    mount --bind "$wrapper" /usr/sbin/mntus
+fi
 jobs=/var/run/kppmods-upstart
 changed=0
 if [ ! -f /etc/upstart/.kppmods ]; then
@@ -12,7 +31,7 @@ if [ ! -f /etc/upstart/.kppmods ]; then
     mount --bind "$jobs" /etc/upstart
     changed=1
 fi
-for job in /var/run/eink-sdk/usr/share/kppmods/upstart/*.conf; do
+for job in "$runtime"/share/kppmods/upstart/*.conf; do
     [ -f "$job" ] || continue
     target="$jobs/${job##*/}"
     if ! cmp -s "$job" "$target"; then
@@ -22,18 +41,24 @@ for job in /var/run/eink-sdk/usr/share/kppmods/upstart/*.conf; do
     fi
 done
 if [ "$changed" = 1 ]; then initctl reload-configuration; fi
+# A core upgrade must also replace the running cached executable.
+for job in kppmods-storage kppmods; do
+    if initctl status "$job" | grep -q start/running; then
+        initctl stop "$job"
+    fi
+done
 if ! initctl status kppmods | grep -q start/running; then
     initctl start kppmods
 fi
 # The service owns activation; start it before issuing a management request.
 i=0
-until /var/run/eink-sdk/usr/bin/kppmod --request health </dev/null >/dev/null 2>&1; do
+until "$runtime/bin/kppmod" --request health </dev/null >/dev/null 2>&1; do
     i=$((i + 1))
     [ "$i" -lt 30 ] || { echo "KPP Mods service did not become ready" >&2; exit 1; }
     sleep 1
 done
-/var/run/eink-sdk/usr/bin/kppmod reload "$@"
-for job in /var/run/eink-sdk/usr/share/kppmods/upstart/*.conf; do
+"$runtime/bin/kppmod" reload "$@"
+for job in "$runtime"/share/kppmods/upstart/*.conf; do
     [ -f "$job" ] || continue
     name=${job##*/}
     name=${name%.conf}

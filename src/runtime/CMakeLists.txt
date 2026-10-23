@@ -8,6 +8,7 @@ add_executable(kppmods-runtime
     settings.cpp status-items.cpp storage.cpp activation.cpp apps.cpp
     configuration.cpp device.cpp job-configuration.cpp jobs.cpp packages.cpp
     process.cpp diagnostics.cpp child-process.cpp filesystem.cpp hermes/discovery.cpp
+    runtime-cache.cpp userstore.cpp
 )
 target_link_libraries(kppmods-runtime PRIVATE
     kppmods-json-0 kppmods-boost-process dl pthread rt)

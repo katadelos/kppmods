@@ -66,27 +66,28 @@ def main():
                 source / "usr/share/licenses/kppmods",
                 target / "usr/share/licenses/kppmods",
             )
-            copy_payload(
-                source / "usr/share/kppmods/upstart/kppmods.conf",
-                target / "usr/share/kppmods/upstart/kppmods.conf",
-            )
-            copy_payload(
-                source / "usr/share/kppmods/kppmods.sh",
-                target / "usr/share/kppmods/kppmods.sh",
-            )
+            for resource in ("upstart/kppmods.conf", "upstart/kppmods-storage.conf",
+                             "kppmods.sh", "kppmods-mntus"):
+                copy_payload(source / "usr/share/kppmods" / resource,
+                             target / "usr/share/kppmods" / resource)
             hooks["postinst"] = (
                 "mkdir -p /mnt/us/documents\n"
                 "cp /mnt/us/.eink-sdk/usr/share/kppmods/kppmods.sh "
                 "/mnt/us/documents/kppmods.sh\n" + start
             )
-            hooks["prerm"] = "initctl stop kppmods || :"
+            hooks["prerm"] = "initctl stop kppmods-storage || :\ninitctl stop kppmods || :"
             hooks["postrm"] = (
                 '[ "${1:-}" != upgrade ] || exit 0\n'
                 "if [ -f /mnt/us/documents/kppmods.sh ] && "
                 "grep -q '^# kppmods package launcher$' /mnt/us/documents/kppmods.sh; then\n"
                 "    rm /mnt/us/documents/kppmods.sh\n"
                 "fi\n"
-                "rm -f /var/run/kppmods-upstart/kppmods.conf\ninitctl reload-configuration"
+                "while grep -q '^# kppmods userstore handover$' /usr/sbin/mntus; do\n"
+                "    umount /usr/sbin/mntus || exit 1\n"
+                "done\n"
+                "rm -f /var/run/kppmods-upstart/kppmods.conf /var/run/kppmods-upstart/kppmods-storage.conf\n"
+                "rm -f /var/run/kppmods/userstore /var/run/kppmods/mntus.stock\n"
+                "initctl reload-configuration"
             )
             depends = []
         else:

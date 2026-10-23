@@ -78,7 +78,7 @@ For automatic startup, the device's writable boot integration must run these aft
 userstore and stock jobs are available:
 
 ```sh
-sh /var/local/kindle-opkg/activate
+sh /mnt/us/.eink-sdk/control/activate
 /var/run/eink-sdk/usr/bin/kppmods-start
 ```
 
@@ -86,6 +86,31 @@ sh /var/local/kindle-opkg/activate
 the selected extensions. The package's stock job changes live in that overlay;
 they do not replace the firmware files on disk. Reload preserves an active
 development session, including after reboot.
+
+## Runtime cache and USB storage
+
+opkg installs the binaries, extensions and saved settings on userstore as usual.
+`kppmods-start` prepares `/var/local/kppmods/current` from those installed files,
+including the native C++ dependencies. The cache persists across boots and is
+replaced atomically when package contents change. Startup recreates a missing
+cache; the running storage watcher also repairs a deleted cache while userstore
+is available. Cache preparation requires the payload size plus 16 MiB free on
+`/var/local`. Settings are saved to userstore before the cached copy is updated.
+
+KPP Mods owns the cache, application quiescing and restoration; the HAL only
+manages USBnet and ADB claims. With no such claim, stock firmware owns USB
+storage. A volatile wrapper
+around its `mntus` command closes SDK applications and stops package services
+before the backing filesystem is unmounted. The broker and injected mods remain
+loaded from the cache. After stock firmware remounts userstore, the watcher
+restores SDK execution and package services and reconciles the enabled mods.
+Open SDK applications are closed, not reopened. Userstore-dependent SSH sessions
+may also end during transfer.
+
+A package operation or process that cannot release the SDK blocks export. Inspect
+`/var/run/kppmods/userstore-error` and the `kppmods-storage` syslog entries for the
+reason. New SDK commands are refused during handover. The wrapper and Upstart
+overlay live in RAM; startup recreates them from the current firmware after boot.
 
 ## Diagnose a failure
 

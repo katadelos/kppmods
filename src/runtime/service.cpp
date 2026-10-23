@@ -2,6 +2,8 @@
 #include "broker.hpp"
 #include "jobs.hpp"
 #include "packages.hpp"
+#include "runtime-cache.hpp"
+#include "userstore.hpp"
 #include <algorithm>
 #include <pwd.h>
 #include <unistd.h>
@@ -15,10 +17,15 @@ const Package &Broker::package(const std::string &id) const {
     return *found;
 }
 void Broker::loadConfiguration() {
-    config = readJson(configPath, Configuration{});
-    if (config.root.empty()) {
-        config.root = std::filesystem::path(configPath).parent_path().string();
+    // Retain the previously activated processes when rebuilding a deleted
+    // cache, so reconciliation also removes obsolete injections.
+    config = Configuration{};
+    if (std::filesystem::exists(configPath)) {
+        config = readJson(configPath, Configuration{});
+    } else if (userstoreMounted()) {
+        config = readJson(sourceState + "/config.json", Configuration{});
     }
+    config.root = cacheState;
     data = config.root + "/data";
     std::filesystem::create_directories(data);
     const auto native = runRoot + "/native";
@@ -58,6 +65,7 @@ Json Broker::manage(const Json &body) {
                                                           {"list", false},
                                                           {"apps", false},
                                                           {"reload", false},
+                                                          {"reconcile", false},
                                                           {"apply", true},
                                                           {"enable", true},
                                                           {"disable", true},
@@ -75,6 +83,7 @@ Json Broker::manage(const Json &body) {
         result.as_object()["pending_jobs"] = boost::json::value_from(pendingJobs);
         return result;
     }
+    auto admission = userstoreAdmission();
     if (command == "list") {
         boost::json::array result;
         const auto installed = installedPackages();
@@ -106,17 +115,24 @@ Json Broker::manage(const Json &body) {
     }
     const auto previous = config;
     const auto pending = pendingJobs;
-    const auto currentDisabled = disabled;
+    const auto currentDisabled = command == "reconcile"
+        ? readJson(root + "/disabled.json", disabled) : disabled;
     managementResults.emplace(
         ++managementId,
         std::async(
             std::launch::async,
             [this, root, command, argument, previous, currentDisabled,
-             pending]() -> Json {
+             pending, admission = std::move(admission)]() mutable -> Json {
+                // Release when this operation finishes, not when its retained
+                // shared_future is eventually removed from the result cache.
+                auto lease = std::move(admission);
                 Json value;
                 if (command == "launch-app") {
                     launchApp(argument);
                 } else {
+                    if (command == "reload") {
+                        prepareRuntimeCache();
+                    }
                     auto nextDisabled = currentDisabled;
                     const auto installed = installedPackages();
                     if (command == "apply") {
@@ -182,9 +198,7 @@ Json Broker::manage(const Json &body) {
                         pendingJobs = jobs;
                         saveJsonAtomically(root + "/disabled.json",
                                            boost::json::value_from(nextDisabled));
-                        writeFileAtomically(
-                            configPath,
-                            boost::json::serialize(boost::json::value_from(candidate)));
+                        saveJsonAtomically(configPath, boost::json::value_from(candidate));
                         disabled = std::move(nextDisabled);
                         if (config.packages != candidate.packages ||
                             config.processes != candidate.processes) {

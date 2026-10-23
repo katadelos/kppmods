@@ -3,7 +3,7 @@
 #include <filesystem>
 namespace kppmods {
 using km::Json;
-inline const std::string runtimeRoot = "/var/run/eink-sdk/usr/lib/kppmods";
+inline const std::string runtimeRoot = "/var/local/kppmods/current/lib/kppmods";
 inline const std::string runRoot = "/var/run/kppmods";
 using km::files::readFile;
 using km::files::writeFileAtomically;

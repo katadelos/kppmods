@@ -1,0 +1,41 @@
+#!/bin/sh
+# kppmods userstore handover
+# Volatile wrapper around the current firmware's mntus, installed by kppmods-start.
+set -u
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+runtime=/var/local/kppmods/current
+original=/var/run/kppmods/mntus.stock
+unset EINK_SDK_SESSION LD_LIBRARY_PATH LD_PRELOAD
+cd /
+operation=${1:-}
+case "$operation" in --loop|--fsck) operation=${2:-} ;; esac
+case "$operation" in
+    base_umount|umount)
+        [ ! -f /var/run/kppmods/starting ] || exit 1
+        exec 8>/var/run/kppmods/handover.lock
+        flock -x 8 || exit 1
+        # Rebuild a deleted cache while the backing filesystem is still local.
+        if [ ! -x "$runtime/bin/kppmod" ]; then
+            /mnt/us/.eink-sdk/usr/bin/kppmod --prepare-runtime || exit 1
+        fi
+        "$runtime/bin/kppmod" --prepare-export || exit 1
+        /bin/sh "$original" "$@"
+        result=$?
+        if [ "$result" -eq 0 ]; then
+            "$runtime/bin/kppmod" --userstore-exported
+        else
+            "$runtime/bin/kppmod" --userstore-abort
+        fi
+        exit "$result"
+        ;;
+    mount)
+        exec 8>/var/run/kppmods/handover.lock
+        flock -x 8 || exit 1
+        /bin/sh "$original" "$@"
+        result=$?
+        if [ "$result" -eq 0 ]; then "$runtime/bin/kppmod" --userstore-remounted; fi
+        exit "$result"
+        ;;
+    *) exec /bin/sh "$original" "$@" ;;
+esac

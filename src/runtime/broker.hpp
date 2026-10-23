@@ -20,6 +20,7 @@ using km::Json;
 struct CommandProcess {
     std::unique_ptr<process::Command> child;
     std::string owner, action;
+    km::files::FileDescriptor userstore;
 };
 
 // The runtime owns activation, package settings, commands and the event stream.
