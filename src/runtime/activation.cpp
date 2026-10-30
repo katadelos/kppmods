@@ -16,7 +16,9 @@ void activate(const Configuration &candidate, std::set<std::string> jobs) {
         restartAppManager &&
         captureCommand({"/sbin/initctl", "status", "appmgrd"}).find("start/running") !=
             std::string::npos;
-    std::string resume = "app://com.lab126.KPPMainApp/?view=KPP_HOME";
+    // Let firmware select its Home implementation. KPP_HOME is incomplete on
+    // 5.14.1, where the working Home view is still provided by the Java booklet.
+    std::string resume = "app://com.lab126.booklet.home";
     if (appManagerRunning) {
         const auto context = captureCommand(
             {"/usr/bin/lipc-get-prop", "com.lab126.appmgrd", "activeContext"});
