@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { KindleProvider, Text, Image } from 'react-kindle';
-import { useApps, useExtension } from '@kppmods/react';
+import { useApps, useExtension, useSetting } from '@kppmods/react';
 
 // Stock KPP registers this native host; registering it again is an error.
 const NativeButton = 'KPPUnifiedButton';
@@ -140,12 +140,76 @@ export default function Launcher() {
   );
 }
 
+function LauncherSettings({ NavigationRow, ToggleRow, PageContainer, Separator }) {
+  const [replaceLibrary, setReplaceLibrary] = useSetting('replaceLibrary', false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function select(value) {
+    if (saving || value === replaceLibrary) return;
+    setSaving(true);
+    setError('');
+    setReplaceLibrary(value).then(
+      () => setSaving(false),
+      (failure) => {
+        setSaving(false);
+        setError(String(failure.message || failure));
+      }
+    );
+  }
+
+  return (
+    <PageContainer testID="settingsapp.kppmods.launcher">
+      <ToggleRow
+        widgetId="kppmods-launcher-add-tab"
+        title="Add Apps tab"
+        description="Keep Library and show Apps as an additional tab."
+        currentState={!replaceLibrary}
+        disabled={saving}
+        onPress={() => select(false)}
+      />
+      <Separator />
+      <ToggleRow
+        widgetId="kppmods-launcher-replace-library"
+        title="Replace Library"
+        description="Show Apps in place of the stock Library view."
+        currentState={replaceLibrary}
+        disabled={saving}
+        onPress={() => select(true)}
+      />
+      {error ? (
+        <NavigationRow
+          title="Could not save launcher location"
+          description={error}
+          isShowNavigationIcon={false}
+        />
+      ) : null}
+    </PageContainer>
+  );
+}
+
 export function activate(extension) {
-  extension.tabs.add({
-    id: 'apps',
-    title: extension.options.title || 'Apps',
-    component: Launcher,
-    order: 20
+  function updateTab() {
+    extension.tabs.remove('apps');
+    extension.tabs.add({
+      id: 'apps',
+      title: extension.options.title || 'Apps',
+      component: Launcher,
+      replace: extension.settings.get('replaceLibrary', false)
+        ? 'KPP_LIBRARY'
+        : undefined,
+      order: 20
+    });
+  }
+  updateTab();
+  extension.settings.subscribe(({ key }) => {
+    if (key === 'replaceLibrary') updateTab();
+  });
+  extension.settingsPages.add({
+    id: 'preferences',
+    title: 'App Launcher',
+    parent: 'mod-manager:mods',
+    component: LauncherSettings
   });
   (extension.options.hiddenTabs || []).forEach(extension.tabs.hide);
 }

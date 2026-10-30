@@ -8,5 +8,13 @@
     "title": "Apps",
     "hiddenTabs": ["chrome.lastBook.button"]
   },
-  "needs": ["ui-host"]
+  "needs": ["ui-host"],
+  "settings": {
+    "replaceLibrary": false
+  },
+  "settingsSchema": {
+    "replaceLibrary": {
+      "type": "boolean"
+    }
+  }
 }
