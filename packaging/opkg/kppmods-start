@@ -40,15 +40,15 @@ for job in "$runtime"/share/kppmods/upstart/*.conf; do
         changed=1
     fi
 done
-if [ "$changed" = 1 ]; then initctl reload-configuration; fi
+if [ "$changed" = 1 ]; then /sbin/initctl reload-configuration; fi
 # A core upgrade must also replace the running cached executable.
 for job in kppmods-storage kppmods; do
-    if initctl status "$job" | grep -q start/running; then
-        initctl stop "$job"
+    if /sbin/initctl status "$job" | grep -q start/running; then
+        /sbin/initctl stop "$job"
     fi
 done
-if ! initctl status kppmods | grep -q start/running; then
-    initctl start kppmods
+if ! /sbin/initctl status kppmods | grep -q start/running; then
+    /sbin/initctl start kppmods
 fi
 # The service owns activation; start it before issuing a management request.
 i=0
@@ -62,7 +62,7 @@ for job in "$runtime"/share/kppmods/upstart/*.conf; do
     [ -f "$job" ] || continue
     name=${job##*/}
     name=${name%.conf}
-    if ! initctl status "$name" | grep -q start/running; then
-        initctl start "$name"
+    if ! /sbin/initctl status "$name" | grep -q start/running; then
+        /sbin/initctl start "$name"
     fi
 done
