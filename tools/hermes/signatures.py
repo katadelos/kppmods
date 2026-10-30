@@ -92,7 +92,7 @@ SIGNATURES = {
         "file://KPPUIQuickSettings/Right-Chevron.svg",
         "rightChevron",
     },
-    "widgetRow": {"getWidgetViewStyle", "quicksettings.widgetview", "renderAirplane"},
+    "widgetRow": {"WidgetMap", "quicksettings.widgetview", "renderAirplane"},
     "widgetView": {"quicksettings.widgets.button.", "renderWidgetText", "widgetStatus"},
     "settingsWindow": {
         "quicksettings.window.contentview",

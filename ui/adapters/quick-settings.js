@@ -19,7 +19,7 @@ module.exports = function installQuickSettings(host) {
     (moduleExports) =>
       moduleExports.default &&
       moduleExports.default.prototype &&
-      moduleExports.default.prototype.getWidgetViewStyle
+      typeof moduleExports.default.prototype.render === 'function'
   ).default.prototype;
   const Widget = loadStockModule(
     'widgetView',
@@ -45,7 +45,7 @@ module.exports = function installQuickSettings(host) {
       };
     }
   );
-  function ExtensionWidget({ item, widgetRow }) {
+  function ExtensionWidget({ item, stockWidget }) {
     const [, setRevision] = React.useState(0);
     const [pending, setPending] = React.useState(false);
     const [failed, setFailed] = React.useState(false);
@@ -77,8 +77,8 @@ module.exports = function installQuickSettings(host) {
       widgetName: item.id,
       widgetText: item.title + (pending ? '…' : failed ? ' · Failed' : ''),
       widgetStatus: item.value && item.value() ? 'On' : 'Off',
-      widgetStyle: widgetRow.getWidgetViewStyle(),
-      is2xScalingSupported: widgetRow.props.is2xScalingSupported,
+      widgetStyle: stockWidget.widgetStyle,
+      is2xScalingSupported: stockWidget.is2xScalingSupported,
       onWidgetPress: () => {
         if (busy.current || (item.disabled && item.disabled())) return;
         busy.current = true;
@@ -102,7 +102,7 @@ module.exports = function installQuickSettings(host) {
       }
     });
   }
-  function ExtensionWidgets({ widgetRow }) {
+  function ExtensionWidgets({ stockWidget }) {
     const items = useRegistry('quickSettings');
     useRegistry('icons');
     return React.createElement(
@@ -112,7 +112,7 @@ module.exports = function installQuickSettings(host) {
         React.createElement(
           ExtensionErrorBoundary,
           { key: item.id + ':' + item.revision, owner: item.owner },
-          React.createElement(ExtensionWidget, { item, widgetRow })
+          React.createElement(ExtensionWidget, { item, stockWidget })
         )
       )
     );
@@ -124,13 +124,20 @@ module.exports = function installQuickSettings(host) {
     (original) =>
       function () {
         const tree = original.apply(this, arguments);
+        // Reuse the actual stock widget layout. 5.14.1 supplies this inline;
+        // later firmware computes it through getWidgetViewStyle().
+        const children = React.Children.toArray(tree.props.children);
+        const stockWidget = children.find(
+          (child) => React.isValidElement(child) && child.props.widgetStyle !== undefined
+        );
+        if (!stockWidget) return tree;
         return React.cloneElement(
           tree,
           {},
-          React.Children.toArray(tree.props.children).concat(
+          children.concat(
             React.createElement(ExtensionWidgets, {
               key: 'kppmods-widgets',
-              widgetRow: this
+              stockWidget: stockWidget.props
             })
           )
         );
