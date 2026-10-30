@@ -15,6 +15,7 @@ module.exports = function createHost(global) {
   const statusRetryDelays = [250, 500, 1000, 2000, 4000, 8000];
   const componentSlots = {};
   const packageRevisions = {};
+  let stockChrome;
   const registry = require('./registry')(reportExtensionError);
   const {
     contributions,
@@ -89,6 +90,31 @@ module.exports = function createHost(global) {
       });
     };
   }
+  function rememberStockChrome(data) {
+    const chrome = data && (data.chromeConfig || data);
+    if (
+      !chrome ||
+      !chrome.navBarConfig ||
+      chrome.navBarConfig.template !== 'searchBar' ||
+      !Array.isArray(chrome.navBarConfig.buttonsConfig) ||
+      [
+        'KPP_HOME',
+        'KPP_LIBRARY',
+        'com.lab126.KPPMainApp',
+        'com.lab126.booklet.home'
+      ].indexOf(chrome.appId) < 0
+    )
+      return;
+    stockChrome = chrome;
+  }
+  function chromeItem(item) {
+    return Object.assign({}, item, {
+      state:
+        item.enabled === false || item.isEnabled === false ? 'disabled' : 'enabled',
+      handling: item.notifyLegacyApp ? 'notifyApp' : 'system',
+      uri: item.imageSrc ? item.imageSrc.uri : ''
+    });
+  }
   function wrapExtensionComponent(item) {
     // A route keeps one component identity while its owning package is replaced.
     if (!componentSlots[item.id]) {
@@ -103,16 +129,24 @@ module.exports = function createHost(global) {
           // V1 manages chrome through its existing navigation events.
           const chrome = ReactNative.NativeModules.KPPChromeConfigurationModule;
           if (!chrome || typeof chrome.configureChrome !== 'function') return;
-          chrome.configureChrome(
-            {
-              appId: route,
-              source: 'org.kppmods.' + current.owner,
-              topNavBar: { template: 'searchBar', buttons: [] },
-              systemMenu: { clientParams: { profile: { items: [] } } },
-              bottomChromeConfig: { hideBottomChrome: false }
+          if (!stockChrome) return;
+          const profile = {
+            appId: route,
+            source: 'org.kppmods.' + current.owner,
+            topNavBar: {
+              template: 'searchBar',
+              buttons: stockChrome.navBarConfig.buttonsConfig.map(chromeItem)
             },
-            {}
-          );
+            bottomChromeConfig: { hideBottomChrome: false }
+          };
+          if (Array.isArray(stockChrome.contextMenuList)) {
+            profile.systemMenu = {
+              clientParams: {
+                profile: { items: stockChrome.contextMenuList.map(chromeItem) }
+              }
+            };
+          }
+          chrome.configureChrome(profile, {});
         }, [route, props.activeAppID]);
         if (!current) return null;
         return React.createElement(
@@ -251,6 +285,15 @@ module.exports = function createHost(global) {
       ReactNative = loadStockModule(
         'reactNative',
         (moduleExports) => moduleExports.NativeModules && moduleExports.View
+      );
+      // Preserve the device's own Home/Library buttons and menu, including
+      // Scribe controls. Startup chrome is delivered asynchronously by KPP.
+      [
+        'KPPChrome_configChanged',
+        'onKPPChromeBatchData',
+        'ChromeAndKPPAppConfig'
+      ].forEach((event) =>
+        ReactNative.DeviceEventEmitter.addListener(event, rememberStockChrome)
       );
       useRegistry = registry.createHook(React);
       ExtensionErrorBoundary = require('./error-boundary.jsx')(
