@@ -1,6 +1,21 @@
 """Semantic strings identifying stock Metro modules."""
 
 SIGNATURES = {
+    "deviceInfo": {
+        "getDeviceInfo",
+        "renderDeviceInfoRow",
+        "settingsapp.device_info",
+    },
+    "quickSettingsStatusBar": {
+        "QuickSettings_deviceNameChanged",
+        "renderLeftContainer",
+        "quicksettings.statusbar.container",
+    },
+    "quickActionsHeader": {
+        "deviceNameSub",
+        "avatarInitial",
+        "quickactions.header.container",
+    },
     "settingsNavigationRow": {
         "settingsapp.navigational_row.",
         "widgetId",
@@ -30,6 +45,11 @@ SIGNATURES = {
         "getWifiWidgetState",
         "renderPageItems",
         "settingsapp.wifi_and_bluetooth",
+    },
+    "wifiNetworks": {
+        "renderNetworkButton",
+        "renderConnectedOverlay",
+        "wifiPage.list.wifi.",
     },
     "settingsRoot": {
         "renderSettingsHomeView",
