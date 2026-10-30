@@ -100,7 +100,10 @@ module.exports = function createHost(global) {
           // Native KPP does not have a chrome profile for extension routes.
           // Configure it on entry so Settings or a reader cannot leave their
           // title, controls, or hidden footer behind on an extension tab.
-          ReactNative.NativeModules.KPPChromeConfigurationModule.configureChrome(
+          // V1 manages chrome through its existing navigation events.
+          const chrome = ReactNative.NativeModules.KPPChromeConfigurationModule;
+          if (!chrome || typeof chrome.configureChrome !== 'function') return;
+          chrome.configureChrome(
             {
               appId: route,
               source: 'org.kppmods.' + current.owner,
