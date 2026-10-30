@@ -1,5 +1,6 @@
 // Read device properties from firmware files and exported symbols.
 #include "device.hpp"
+#include "common/react-native.hpp"
 #include "identifiers.hpp"
 #include "process.hpp"
 #include "runtime-files.hpp"
@@ -48,6 +49,29 @@ std::optional<std::string> detectStringAbi(const AbiSelector &selector) {
         throw std::runtime_error("Ambiguous C++ ABI provider: " + provider);
     }
     return hasNewAbi ? "1" : "0";
+}
+
+std::string detectHostStringAbi() {
+    const auto data = readFile("/app/lib/libReactNative.so");
+    std::string result;
+    for (int abi = 0; abi != 2; ++abi) {
+        for (const auto &api : {km::reactNative::bridge[abi],
+                                km::reactNative::application[abi]}) {
+            if (data.find(api.load) == std::string::npos ||
+                data.find(api.evaluate) == std::string::npos) {
+                continue;
+            }
+            const auto candidate = std::to_string(abi);
+            if (!result.empty() && result != candidate) {
+                throw std::runtime_error("Ambiguous React Native C++ string ABI");
+            }
+            result = candidate;
+        }
+    }
+    if (result.empty()) {
+        throw std::runtime_error("No supported React Native load/evaluate API in /app/lib/libReactNative.so");
+    }
+    return result;
 }
 
 std::string readFirmware(const std::string &installationRoot) {

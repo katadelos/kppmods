@@ -1,4 +1,5 @@
 #include "common/json.hpp"
+#include "common/react-native.hpp"
 #include <algorithm>
 #include <cerrno>
 #include <cstdio>
@@ -239,6 +240,7 @@ void initialize() {
     std::unique_ptr<Module> self(new Module);
     self->id = "kppmods.host";
     state.claims.emplace("reactNative.Bridge.loadBundle", Claim{self.get(), nullptr});
+    state.claims.emplace("reactNative.ReactNative.loadApplication", Claim{self.get(), nullptr});
     state.claims.emplace("reactNative.NativeModule.invoke", Claim{self.get(), nullptr});
     state.claims.emplace("reactNative.NativeModuleInterface.shutdown",
                          Claim{self.get(), nullptr});
@@ -262,42 +264,19 @@ void initialize() {
 }
 using Load = bool (*)(void *, const std::string &);
 using Eval = bool (*)(void *, std::string &&);
-#if _GLIBCXX_USE_CXX11_ABI
-#define LOAD_SYMBOL                                                                    \
-    "_ZN11reactNative6Bridge10loadBundleERKNSt7__cxx1112basic_stringIcSt11char_"       \
-    "traitsIcESaIcEEE"
-#define EVAL_SYMBOL                                                                    \
-    "_ZN11reactNative6Bridge20loadScriptFromStringEONSt7__cxx1112basic_"               \
-    "stringIcSt11char_traitsIcESaIcEEE"
-#else
-#define LOAD_SYMBOL "_ZN11reactNative6Bridge10loadBundleERKSs"
-#define EVAL_SYMBOL "_ZN11reactNative6Bridge20loadScriptFromStringEOSs"
-#endif
-} // namespace
-extern "C" bool kppmods_transport_enabled() {
-    initialize();
-    return host().enabled && host().process == "kppmainapp";
-}
-extern "C" __attribute__((visibility("default"))) bool
-kppmods_load_bundle(void *, const std::string &) asm(LOAD_SYMBOL);
-extern "C" bool kppmods_load_bundle(void *bridge, const std::string &path) {
-    static Load real = reinterpret_cast<Load>(dlsym(RTLD_NEXT, LOAD_SYMBOL));
-    if (!real) {
-        report("host", LOG_ERR, "original loadBundle unavailable");
-        return false;
-    }
-    const bool result = real(bridge, path);
+constexpr auto bridgeApi = km::reactNative::bridge[_GLIBCXX_USE_CXX11_ABI];
+constexpr auto applicationApi = km::reactNative::application[_GLIBCXX_USE_CXX11_ABI];
+void injectScripts(void *receiver, const std::string &path, Eval eval) {
     initialize();
     Host &state = host();
-    if (!result || !state.enabled || state.process != "kppmainapp" ||
+    if (!state.enabled || state.process != "kppmainapp" ||
         (path != "/app/KPPMainApp/js/KPPMainApp.js" &&
          path != "/app/KPPMainApp/js/KPPMainApp.js.hbc")) {
-        return result;
+        return;
     }
-    auto eval = reinterpret_cast<Eval>(dlsym(RTLD_NEXT, EVAL_SYMBOL));
     if (!eval) {
-        report("host", LOG_ERR, "loadScriptFromString unavailable");
-        return result;
+        report("host", LOG_ERR, "React Native script evaluation API unavailable");
+        return;
     }
     for (const auto &script : state.scripts) {
         try {
@@ -315,7 +294,7 @@ extern "C" bool kppmods_load_bundle(void *bridge, const std::string &path) {
                 report(script.id, LOG_ERR, "invalid script size or read failure");
                 continue;
             }
-            const bool ok = eval(bridge, std::move(js));
+            const bool ok = eval(receiver, std::move(js));
             report(script.id, ok ? LOG_INFO : LOG_ERR,
                    ok ? "script evaluated" : "script evaluation failed");
         } catch (const std::exception &error) {
@@ -323,6 +302,53 @@ extern "C" bool kppmods_load_bundle(void *bridge, const std::string &path) {
         } catch (...) {
             report(script.id, LOG_ERR, "script evaluation threw an exception");
         }
+    }
+}
+#if _GLIBCXX_USE_CXX11_ABI
+#define LOAD_SYMBOL \
+    "_ZN11reactNative6Bridge10loadBundleERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE"
+#define APPLICATION_SYMBOL \
+    "_ZN11reactNative11ReactNative15loadApplicationERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE"
+#else
+#define LOAD_SYMBOL "_ZN11reactNative6Bridge10loadBundleERKSs"
+#define APPLICATION_SYMBOL "_ZN11reactNative11ReactNative15loadApplicationERKSs"
+#endif
+} // namespace
+extern "C" bool kppmods_transport_enabled() {
+    initialize();
+    return host().enabled && host().process == "kppmainapp";
+}
+extern "C" __attribute__((visibility("default"))) bool
+kppmods_load_bundle(void *, const std::string &) asm(LOAD_SYMBOL);
+extern "C" bool kppmods_load_bundle(void *bridge, const std::string &path) {
+    static auto real = reinterpret_cast<Load>(dlsym(RTLD_NEXT, bridgeApi.load));
+    if (!real) {
+        report("host", LOG_ERR, "original loadBundle unavailable");
+        return false;
+    }
+    const bool result = real(bridge, path);
+    if (result) {
+        static auto eval = reinterpret_cast<Eval>(dlsym(RTLD_NEXT, bridgeApi.evaluate));
+        injectScripts(bridge, path, eval);
+    }
+    return result;
+}
+extern "C" __attribute__((visibility("default"))) bool
+kppmods_load_application(void *, const std::string &) asm(APPLICATION_SYMBOL);
+extern "C" bool kppmods_load_application(void *application, const std::string &path) {
+    static auto real = reinterpret_cast<Load>(dlsym(RTLD_NEXT, applicationApi.load));
+    if (!real) {
+        report("host", LOG_ERR, "original loadApplication unavailable");
+        return false;
+    }
+    const bool result = real(application, path);
+    // Firmware exposing Bridge is handled by that hook inside this call.
+    // Older firmware keeps Bridge private; use its public application API.
+    static const bool bridgeExported = dlsym(RTLD_NEXT, bridgeApi.load) &&
+                                       dlsym(RTLD_NEXT, bridgeApi.evaluate);
+    if (result && !bridgeExported) {
+        static auto eval = reinterpret_cast<Eval>(dlsym(RTLD_NEXT, applicationApi.evaluate));
+        injectScripts(application, path, eval);
     }
     return result;
 }

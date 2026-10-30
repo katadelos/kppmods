@@ -114,16 +114,7 @@ Configuration buildConfiguration(const std::string &installationRoot,
         c.ui_runtime = provider->id;
     }
     for (const auto &job : hostJobs) {
-        // Probe the library that defines the hook; the executable may not
-        // import it (for example on firmware 5.14.2).
-        const auto variant =
-            job == "kppmainapp"
-                ? detectStringAbi({"/app/lib/libReactNative.so",
-                                   "_ZN11reactNative6Bridge10loadBundleERKSs",
-                                   "_ZN11reactNative6Bridge10loadBundleERKNSt7__"
-                                   "cxx1112basic_stringIcSt11char_traitsIcESaIcEEE"})
-                      .value()
-                : "0";
+        const auto variant = job == "kppmainapp" ? detectHostStringAbi() : "0";
         preloads[job].insert(preloads[job].begin(),
                              runtimeRoot + "/abi" + variant + "/libkppmods-host.so");
     }

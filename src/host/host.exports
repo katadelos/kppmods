@@ -1,6 +1,7 @@
 {
     global:
         _ZN11reactNative6Bridge10loadBundle*;
+        _ZN11reactNative11ReactNative15loadApplication*;
         _ZN11reactNative12nativeModule12NativeModule6invokeExON5utils4json13JsonContainerEx;
         _ZN11reactNative12nativeModule21NativeModuleInterface8shutdownEv;
     local: *;
