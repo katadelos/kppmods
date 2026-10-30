@@ -37,7 +37,7 @@ void Broker::loadConfiguration() {
         }
     }
     pendingJobs = readJson(config.root + "/pending-jobs.json", std::set<std::string>{});
-    disabled = readJson(config.root + "/disabled.json", Disabled{"fake-registration"});
+    disabled = readJson(config.root + "/disabled.json", Disabled{"fake-registration", "koreader"});
     disabled.erase("ui-host");
     disabled.erase("mod-manager");
     config.settings.clear();
