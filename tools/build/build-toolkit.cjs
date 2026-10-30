@@ -36,7 +36,16 @@ async function build() {
   fs.writeFileSync(
     output,
     `KPPMods.loadToolkit = function () {
-    var embeddedRN = Object.create(KPPMods.stock("reactNative"));
+    var stockRN = KPPMods.stock("reactNative");
+    var embeddedRN = Object.create(stockRN);
+    var dimensions = Object.create(stockRN.Dimensions);
+    Object.defineProperty(dimensions, "addEventListener", { value: function (event, listener) {
+      var subscription = stockRN.Dimensions.addEventListener(event, listener);
+      return subscription || { remove: function () {
+        stockRN.Dimensions.removeEventListener(event, listener);
+      } };
+    } });
+    Object.defineProperty(embeddedRN, "Dimensions", { value: dimensions });
     Object.defineProperty(embeddedRN, "requireNativeComponent", { value: function (name) { return name; } });
     ${compileForHermes(result.outputFiles[0].text)}
     return toolkit;
