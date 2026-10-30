@@ -26,7 +26,7 @@ bool jobLibrariesLoaded(const Configuration &configuration, const std::string &j
     if (job == "framework") {
         targets = {"cvm", "java"};
     } else if (job == "kppmainapp") {
-        targets = {"KPPMainAppV2", "KPPMainApp"};
+        targets = {"KPPMainAppV1", "KPPMainAppV2", "KPPMainApp"};
     } else if (job == "webreader") {
         targets = {"webreader"};
     } else if (job == "statusbar") {

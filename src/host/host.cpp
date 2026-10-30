@@ -128,7 +128,8 @@ bool processMatches(const std::string &process) {
     const char *base = strrchr(path, '/');
     base = base ? base + 1 : path;
     if (process == "kppmainapp") {
-        return strcmp(base, "KPPMainAppV2") == 0 || strcmp(base, "KPPMainApp") == 0;
+        return strcmp(base, "KPPMainAppV1") == 0 ||
+               strcmp(base, "KPPMainAppV2") == 0 || strcmp(base, "KPPMainApp") == 0;
     }
     if (process == "framework") {
         return strcmp(base, "cvm") == 0 || strcmp(base, "java") == 0;

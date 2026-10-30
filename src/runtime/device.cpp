@@ -12,7 +12,8 @@ namespace kppmods {
 // Match exported/imported symbol spellings instead of assuming an ABI from firmware
 // numbers.
 std::string kppMainAppExecutable() {
-    for (const char *path : {"/app/bin/KPPMainAppV2", "/app/bin/KPPMainApp"}) {
+    // Follow the firmware-selected executable when both V1 and V2 are installed.
+    for (const char *path : {"/app/bin/KPPMainApp", "/app/bin/KPPMainAppV2"}) {
         if (std::filesystem::exists(path)) {
             return std::filesystem::canonical(path).string();
         }
