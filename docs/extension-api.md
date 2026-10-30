@@ -68,18 +68,18 @@ an ID qualified by the package, such as `reading-tools:tools`. `list` returns th
 package's registrations; `extension.list(kind)` reads all contributors. A package
 can only remove its own registrations. Lower `order` values sort first (default 0).
 
-| Registry        | Definition                                                                                                                   |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `tabs`          | `id`, `title`, React `component`; optional `order`, `footer` (set `false` for a route without a footer button)               |
-| `home`          | `id`, React `component`, optional `order`; replaces stock Home content                                                       |
-| `settingsPages` | `id`, `title`, React `component`, optional `order`, `parent`                                                                           |
-| `wifiSettings`  | `id`, React `component`, optional `order`; rows inside the native Wi-Fi settings page                                        |
-| `menuItems`     | `id`, `title`, `app://` `uri`, optional `order`; stock three-dot menu                                                        |
-| `quickSettings` | `id`, `title`, `icon`, `action`; optional `iconOn`, `args`, `close`, `order`, `value()`, `disabled()`, `subscribe(listener)` |
-| `sliders`       | `id`, `title`, `min`, `max`; optional `get()`, `set(value)`, `subscribe(listener)`, `action`, `order`                        |
-| `icons`         | `id` and package-relative `path`, or explicit `uri`                                                                          |
-| `status`        | `id`, `icon`, `app://` `uri`; requires `org.kppmods.statusbar`                                                               |
-| `actions`       | `id`, JavaScript `run(args)`                                                                                                 |
+| Registry        | Definition                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tabs`          | `id`, `title`, React `component`; optional `order`, `footer` (set `false` for a route without a footer button), `replace` (stock view name) |
+| `home`          | `id`, React `component`, optional `order`; replaces stock Home content                                                                      |
+| `settingsPages` | `id`, `title`, React `component`, optional `order`, `parent`                                                                                |
+| `wifiSettings`  | `id`, React `component`, optional `order`; rows inside the native Wi-Fi settings page                                                       |
+| `menuItems`     | `id`, `title`, `app://` `uri`, optional `order`; stock three-dot menu                                                                       |
+| `quickSettings` | `id`, `title`, `icon`, `action`; optional `iconOn`, `args`, `close`, `order`, `value()`, `disabled()`, `subscribe(listener)`                |
+| `sliders`       | `id`, `title`, `min`, `max`; optional `get()`, `set(value)`, `subscribe(listener)`, `action`, `order`                                       |
+| `icons`         | `id` and package-relative `path`, or explicit `uri`                                                                                         |
+| `status`        | `id`, `icon`, `app://` `uri`; requires `org.kppmods.statusbar`                                                                              |
+| `actions`       | `id`, JavaScript `run(args)`                                                                                                                |
 
 For Quick Settings, `value()` supplies the current on/off state. `iconOn` selects
 the on-state icon. `disabled()` blocks interaction. Return the action's completion
@@ -96,6 +96,11 @@ app://com.lab126.KPPMainApp/?view=KPP_MOD_READING_TOOLS_TOOLS
 
 Use `extension.navigate(uri)` to open it. Menu items can link to routes registered
 with `footer: false`, including on firmware with Java Settings.
+
+`tabs.add({ id: 'apps', title: 'Apps', component: Launcher, replace: 'KPP_LIBRARY' })`
+replaces the stock Library view and labels its footer button with the extension's
+title. The custom route remains available to shortcuts without an additional
+footer button. Removing the contribution restores stock Library content.
 
 `tabs.hide('chrome.notebook.button')` hides a stock footer item.
 `tabs.hide('chrome.lastBook.button')` also hides its floating book-cover overlay.

@@ -121,8 +121,13 @@ module.exports = function createHost(global) {
       componentSlots[item.id] = function ExtensionSlot(props) {
         const current = useRegistry('tabs').find((entry) => entry.id === item.id);
         const route = current && current.route;
+        const activeRoute =
+          current &&
+          (props.activeAppID === route || props.activeAppID === current.replace)
+            ? props.activeAppID
+            : null;
         React.useEffect(() => {
-          if (!route || props.activeAppID !== route) return;
+          if (!activeRoute) return;
           // Native KPP does not have a chrome profile for extension routes.
           // Configure it on entry so Settings or a reader cannot leave their
           // title, controls, or hidden footer behind on an extension tab.
@@ -131,7 +136,7 @@ module.exports = function createHost(global) {
           if (!chrome || typeof chrome.configureChrome !== 'function') return;
           if (!stockChrome) return;
           const profile = {
-            appId: route,
+            appId: activeRoute,
             source: 'org.kppmods.' + current.owner,
             topNavBar: {
               template: 'searchBar',
@@ -147,7 +152,7 @@ module.exports = function createHost(global) {
             };
           }
           chrome.configureChrome(profile, {});
-        }, [route, props.activeAppID]);
+        }, [activeRoute]);
         if (!current) return null;
         return React.createElement(
           ExtensionErrorBoundary,

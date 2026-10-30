@@ -44,6 +44,7 @@ module.exports = function installTabs(host) {
         : React.createElement(original, props);
     });
   }
+  const replacedViews = {};
   function synchronize() {
     listContributions('tabs').forEach((item) => {
       if (item.hide) return;
@@ -59,6 +60,22 @@ module.exports = function installTabs(host) {
         __modOwner: item.id
       };
       if (names.indexOf(route) < 0) names.push(route);
+      if (item.replace && !replacedViews[item.replace]) {
+        const stockView = views[item.replace];
+        if (!stockView || stockView.__modOwner)
+          throw new Error('Unknown stock view: ' + item.replace);
+        const StockComponent = stockView.component;
+        replacedViews[item.replace] = StockComponent;
+        stockView.component = function ReplacedView(props) {
+          const replacement = useRegistry('tabs').find(
+            (tab) => tab.replace === item.replace
+          );
+          return React.createElement(
+            replacement ? wrapExtensionComponent(replacement) : StockComponent,
+            props
+          );
+        };
+      }
     });
     Object.keys(views).forEach((name) => {
       if (views[name].__modOwner && !contributions.tabs[views[name].__modOwner]) {
@@ -87,9 +104,23 @@ module.exports = function installTabs(host) {
     }
     const divider = children.find(containsDivider);
     const hidden = tabs.filter((tab) => tab.hide).map((tab) => tab.stockId);
+    const libraryReplacement = tabs.find((tab) => tab.replace === 'KPP_LIBRARY');
     function visible(node) {
       if (!React.isValidElement(node)) return node;
       if (hidden.indexOf(node.props.testID) >= 0) return null;
+      if (libraryReplacement && node.props.testID === 'chrome.library.button')
+        return React.cloneElement(node, {
+          testID: 'kppmods.' + libraryReplacement.id,
+          title: libraryReplacement.title,
+          selectionHandler: () => {
+            props.navigation.onNavigateToKPPViewCallback({
+              view: libraryReplacement.route
+            });
+          },
+          selected:
+            props.activeAppID === 'KPP_LIBRARY' ||
+            props.activeAppID === libraryReplacement.route
+        });
       // Scribe reserves a separate empty View for the floating book cover.
       // Remove that space with the cover so all remaining tabs share the row.
       if (
@@ -116,7 +147,7 @@ module.exports = function installTabs(host) {
     }
     children = children.map(visible).filter((child) => child !== null);
     tabs
-      .filter((tab) => !tab.hide && tab.footer !== false)
+      .filter((tab) => !tab.hide && !tab.replace && tab.footer !== false)
       .forEach((item) => {
         const node = React.cloneElement(template, {
           key: item.id,

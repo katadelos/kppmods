@@ -302,7 +302,10 @@ function Workbench() {
     setProfile(value);
   };
   const custom = tabs.find((item) => item.id === route);
-  const visibleTabs = tabs.filter((item) => !item.hide && item.footer !== false);
+  const libraryReplacement = tabs.find((item) => item.replace === 'KPP_LIBRARY');
+  const visibleTabs = tabs.filter(
+    (item) => !item.hide && !item.replace && item.footer !== false
+  );
   function content() {
     const settingsPage = settingsPages.find((item) => route === item.id);
     if (settingsPage)
@@ -329,6 +332,8 @@ function Workbench() {
     if (route === 'home' && homes.length)
       return homes.map((item) => <item.component key={item.id} />);
     if (custom) return <custom.component />;
+    if (route === 'library' && libraryReplacement)
+      return <libraryReplacement.component />;
     if (route === 'home' || route === 'library') return <Library />;
     if (route === 'settings')
       return (
@@ -540,7 +545,11 @@ function Workbench() {
                   >
                     <ErrorBoundary
                       key={route + firmware}
-                      owner={custom?.owner || route}
+                      owner={
+                        custom?.owner ||
+                        (route === 'library' && libraryReplacement?.owner) ||
+                        route
+                      }
                     >
                       {content()}
                     </ErrorBoundary>
@@ -564,7 +573,7 @@ function Workbench() {
                       className={route === 'library' ? 'selected' : ''}
                       onClick={() => setRoute('library')}
                     >
-                      Library
+                      {libraryReplacement?.title || 'Library'}
                     </button>
                   )}
                   {visibleTabs.map((item) => (
