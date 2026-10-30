@@ -72,7 +72,7 @@ can only remove its own registrations. Lower `order` values sort first (default 
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `tabs`          | `id`, `title`, React `component`; optional `order`, `footer` (set `false` for a route without a footer button)               |
 | `home`          | `id`, React `component`, optional `order`; replaces stock Home content                                                       |
-| `settingsPages` | `id`, `title`, React `component`, optional `order`                                                                           |
+| `settingsPages` | `id`, `title`, React `component`, optional `order`, `parent`                                                                           |
 | `wifiSettings`  | `id`, React `component`, optional `order`; rows inside the native Wi-Fi settings page                                        |
 | `menuItems`     | `id`, `title`, `app://` `uri`, optional `order`; stock three-dot menu                                                        |
 | `quickSettings` | `id`, `title`, `icon`, `action`; optional `iconOn`, `args`, `close`, `order`, `value()`, `disabled()`, `subscribe(listener)` |
@@ -104,8 +104,8 @@ entries. They do not affect Java Settings or block direct stock routes.
 
 ### Settings page components
 
-A Settings page receives `NavigationRow`, `ToggleRow`, `PageContainer` and
-`Separator` as props. These use the firmware's own Settings components:
+A Settings page receives `NavigationRow`, `ToggleRow`, `PageContainer`,
+`Separator` and `navigateToPage(qualifiedId)` as props. These use the firmware's own Settings components:
 
 - `NavigationRow`: `widgetId`, `title`, `description`, `onPress`, `disabled`, `isShowNavigationIcon`.
 - `ToggleRow`: `widgetId`, `title`, `description`, `currentState`, `onPress`, `disabled`.
@@ -116,6 +116,31 @@ Wi-Fi controls. Check for the `wifiSettings` capability before registering it.
 
 The stock renderer supplies margins, scrolling and Back navigation. Avoid adding a
 second inset. Keep draft selections in React state until the user applies them.
+
+### Extension submenus
+
+A UI extension can place a settings page below its switch in **Extensions**:
+
+```js
+extension.settingsPages.add({
+  id: 'preferences',
+  title: 'App Launcher',
+  parent: 'mod-manager:mods',
+  component: LauncherSettings
+});
+```
+
+The submenu receives the same row and container props as other settings pages.
+Use `useSetting` or `extension.settings` to persist choices. Submenus are available
+for enabled extensions after pending enable/disable changes are applied or
+discarded. They are omitted from the top-level Settings list. Native Settings
+owns the page title and Back navigation; the Extensions menu provides Back on
+firmware with Java Settings.
+
+`parent` is a qualified settings-page ID. In KPP Settings, custom parent pages
+can link to child pages with `navigateToPage(id)`. On firmware with Java Settings,
+submenus must be direct children of `mod-manager:mods`. The Extensions manager
+creates links for those direct children automatically.
 
 ### Assets and icons
 

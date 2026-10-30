@@ -307,12 +307,23 @@ function Workbench() {
     const settingsPage = settingsPages.find((item) => route === item.id);
     if (settingsPage)
       return (
-        <settingsPage.component
-          NavigationRow={PreviewNavigationRow}
-          ToggleRow={PreviewToggleRow}
-          PageContainer={PreviewPageContainer}
-          Separator={Divider}
-        />
+        <PreviewPageContainer>
+          <PreviewNavigationRow
+            title={
+              'Back to ' +
+              (settingsPages.find((item) => item.id === settingsPage.parent)?.title ||
+                'Settings')
+            }
+            onPress={() => setRoute(settingsPage.parent || 'settings')}
+          />
+          <settingsPage.component
+            NavigationRow={PreviewNavigationRow}
+            ToggleRow={PreviewToggleRow}
+            PageContainer={React.Fragment}
+            Separator={Divider}
+            navigateToPage={setRoute}
+          />
+        </PreviewPageContainer>
       );
     if (route === 'gallery') return <Gallery />;
     if (route === 'home' && homes.length)
@@ -323,11 +334,13 @@ function Workbench() {
       return (
         <div className="library">
           <h2>Device settings</h2>
-          {settingsPages.map((item) => (
-            <button key={item.id} onClick={() => setRoute(item.id)}>
-              {item.title}
-            </button>
-          ))}
+          {settingsPages
+            .filter((item) => !item.parent)
+            .map((item) => (
+              <button key={item.id} onClick={() => setRoute(item.id)}>
+                {item.title}
+              </button>
+            ))}
           <p>System services are simulated locally.</p>
           <button onClick={() => setPanel(true)}>Open quick settings</button>
         </div>

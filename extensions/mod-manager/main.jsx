@@ -1,13 +1,22 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { useExtension } from '@kppmods/react';
+import { useExtension, useRegistry } from '@kppmods/react';
 import { ScrollView, View } from 'react-native';
-import { Button, KindleProvider, SettingsRow, SettingsToggle } from 'react-kindle';
+import {
+  Button,
+  KindleProvider,
+  SettingsRow,
+  SettingsToggle,
+  Text
+} from 'react-kindle';
 
 function NavigationRow({ title, description, onPress, disabled }) {
   return onPress ? (
-    <Button variant="secondary" disabled={disabled} onPress={onPress}>
-      {title}
-    </Button>
+    <View>
+      <Button variant="secondary" disabled={disabled} onPress={onPress}>
+        {title}
+      </Button>
+      {description ? <Text>{description}</Text> : null}
+    </View>
   ) : (
     <SettingsRow title={title} description={description} />
   );
@@ -45,8 +54,28 @@ function Separator() {
 }
 
 function ManagerView() {
+  const pages = useRegistry('settingsPages');
+  const [pageId, setPageId] = useState(null);
+  const page = pages.find(
+    (item) => item.id === pageId && item.parent === 'mod-manager:mods'
+  );
+  if (page)
+    return (
+      <PageContainer>
+        <NavigationRow title="Back to Extensions" onPress={() => setPageId(null)} />
+        <Separator />
+        <page.component
+          {...{ NavigationRow, ToggleRow, Separator }}
+          PageContainer={React.Fragment}
+          navigateToPage={setPageId}
+        />
+      </PageContainer>
+    );
   return (
-    <ExtensionManager {...{ NavigationRow, ToggleRow, PageContainer, Separator }} />
+    <ExtensionManager
+      {...{ NavigationRow, ToggleRow, PageContainer, Separator }}
+      navigateToPage={setPageId}
+    />
   );
 }
 
@@ -54,9 +83,13 @@ export default function ExtensionManager({
   NavigationRow,
   ToggleRow,
   PageContainer,
-  Separator
+  Separator,
+  navigateToPage
 }) {
   const extension = useExtension();
+  const pages = useRegistry('settingsPages').filter(
+    (item) => !item.hide && item.parent === 'mod-manager:mods'
+  );
   const [packages, setPackages] = useState([]);
   const [draft, setDraft] = useState({});
   const [busy, setBusy] = useState(true);
@@ -158,6 +191,17 @@ export default function ExtensionManager({
             disabled={busy || !pkg.available}
             onPress={() => toggle(pkg)}
           />
+          {pages
+            .filter((page) => page.owner === pkg.id)
+            .map((page) => (
+              <NavigationRow
+                key={page.id}
+                widgetId={page.id}
+                title={page.title + ' settings'}
+                disabled={busy || !!pending || !pkg.available || !draft[pkg.id]}
+                onPress={() => navigateToPage(page.id)}
+              />
+            ))}
           <Separator />
         </React.Fragment>
       ))}

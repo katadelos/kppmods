@@ -54,6 +54,7 @@ module.exports = function installSettings(host) {
       const create = props.createWidgetFunc;
       return React.cloneElement(element, {
         sideNavComponentIds: items()
+          .filter((item) => !item.parent)
           .map((item) => item.id)
           .concat(props.sideNavComponentIds.filter(visible)),
         createWidgetFunc: (id, callback, options) => {
@@ -96,12 +97,14 @@ module.exports = function installSettings(host) {
                 NavigationRow: NavRow,
                 ToggleRow,
                 PageContainer: React.Fragment,
-                Separator
+                Separator,
+                navigateToPage: (nextId) => this.navigateToView(nextId)
               })
             );
           };
           this.renderSettingsHomeView = (ids, ...args) =>
             items()
+              .filter((item) => !item.parent)
               .map((item) => row(this, item))
               .concat(home.call(this, ids.filter(visible), ...args));
           wired.add(this);

@@ -217,6 +217,8 @@ export function initialize(packageEntries, firmware) {
           id: pkg.id,
           title: pkg.title || pkg.id,
           enabled: !disabledPackages.has(pkg.id),
+          available: true,
+          unavailableReason: '',
           needs: pkg.needs || []
         })),
       apply: async (disabled) => {

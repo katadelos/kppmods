@@ -32,6 +32,16 @@ module.exports = function createContributions(
           typeof definition.component !== 'function'
         )
           throw new Error(kind + ' requires a React component');
+        if (
+          kind === 'settingsPages' &&
+          definition.parent !== undefined &&
+          (typeof definition.parent !== 'string' ||
+            !/^[a-z0-9][a-z0-9.-]{0,126}:[a-zA-Z0-9_-][a-zA-Z0-9_.-]{0,126}$/.test(
+              definition.parent
+            ) ||
+            definition.parent === id)
+        )
+          throw new Error('Settings page parent must be another qualified page ID');
         const item = Object.assign({}, definition, {
           id,
           owner: owner,

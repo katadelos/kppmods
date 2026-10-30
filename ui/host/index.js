@@ -185,14 +185,16 @@ module.exports = function createHost(global) {
         contributions,
         subscribeToEvent
       }),
-    settingsPages: () =>
+    settingsPages: () => {
+      if (configuration.modules.settingsRoot === undefined) return;
       require('../adapters/settings')({
         React,
         loadStockModule,
         listContributions,
         patchStockMethod,
         ExtensionErrorBoundary
-      }),
+      });
+    },
     wifiSettings: () =>
       require('../adapters/wifi-settings')({
         React,
