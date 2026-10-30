@@ -35,12 +35,15 @@ std::optional<std::string> detectStringAbi(const AbiSelector &selector) {
     auto data = readFile(provider);
     bool hasOldAbi = data.find(selector.old_symbol) != std::string::npos,
          hasNewAbi = data.find(selector.new_symbol) != std::string::npos;
-    if (!hasOldAbi && !hasNewAbi && selector.optional.value_or(false)) {
-        syslog(LOG_INFO, "kppmods: skipping optional ABI provider %s: symbols absent",
-               provider.c_str());
-        return std::nullopt;
+    if (!hasOldAbi && !hasNewAbi) {
+        if (selector.optional.value_or(false)) {
+            syslog(LOG_INFO, "kppmods: skipping optional ABI provider %s: symbols absent",
+                   provider.c_str());
+            return std::nullopt;
+        }
+        throw std::runtime_error("C++ ABI symbols not found in provider: " + provider);
     }
-    if (hasOldAbi == hasNewAbi) {
+    if (hasOldAbi && hasNewAbi) {
         throw std::runtime_error("Ambiguous C++ ABI provider: " + provider);
     }
     return hasNewAbi ? "1" : "0";
