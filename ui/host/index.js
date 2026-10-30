@@ -173,6 +173,7 @@ module.exports = function createHost(global) {
     tabs: () =>
       require('../adapters/tabs')({
         loadStockModule,
+        hasBookOverlay: typeof configuration.modules.bookOverlay === 'number',
         listContributions,
         patchStockMethod,
         useRegistry,

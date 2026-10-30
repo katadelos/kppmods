@@ -2,6 +2,7 @@
 module.exports = function installTabs(host) {
   const {
     loadStockModule,
+    hasBookOverlay,
     listContributions,
     patchStockMethod,
     useRegistry,
@@ -24,6 +25,7 @@ module.exports = function installTabs(host) {
       moduleExports.default && typeof moduleExports.default.type === 'function'
   ).default;
   if (
+    hasBookOverlay &&
     listContributions('tabs').some(
       (item) => item.hide && item.stockId === 'chrome.lastBook.button'
     )
