@@ -14,7 +14,10 @@ npm ci
 ```
 
 Full builds also require Python 3, Node (see `package.json`), `patch` and
-`rsvg-convert`. A core-only build does not need Node or Python.
+`rsvg-convert`. Antidox's Java Settings integration requires a JDK with `javac`
+and JNI headers. Set `JAVA_HOME` or pass `-DKPPMODS_JAVA_HOME=/path/to/jdk` when
+the JDK cannot be located from `javac`. The bundled container includes a JDK.
+A core-only build does not need Node or Python.
 
 Choose a target and supply its Linux toolchain, including sysroot and binutils:
 

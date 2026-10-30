@@ -234,4 +234,9 @@ export function activate(extension) {
         }
     );
   }
+
+  if (!capabilities.includes('deviceInfo'))
+    extension.log(
+      'Device names hidden in KPP; Java Settings uses the Antidox framework preload.'
+    );
 }
