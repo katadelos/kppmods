@@ -33,6 +33,10 @@ void activate(const Configuration &candidate, std::set<std::string> jobs) {
         }
     }
     try {
+        // Stop KPP before a framework restart can send it SIGTERM indirectly.
+        if (restartAppManager) {
+            stopKppForReload();
+        }
         for (const char *job : {"framework", "webreader", "statusbar", "kppmainapp"}) {
             if (jobs.erase(job)) {
                 restartJob(candidate, job);
